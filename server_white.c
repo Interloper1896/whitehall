@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 
-		if (tour == 4) tour = 0;	
+		if (tour >= 3) tour = 0;	
 	
     	close(newsockfd);
     }

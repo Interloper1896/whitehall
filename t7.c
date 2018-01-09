@@ -25,6 +25,7 @@ struct _poi
 int indice; // mouvement souris
 int position, posCollegue, posPoliceR, posPoliceJ, posPoliceV; // clic souris
 int tour = 10; // personne ne peut jouer avant que le serveur le décide
+int monTour = 0; // 1 si c'est mon tour
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -574,13 +575,16 @@ int main(int argc, char ** argv)
 				}
 				else
 				{
-					position=findPOI(mx,my);
-					printf("position=%d\n",position);
-					if (position != -1)
+					if (monTour)
 					{
-						sprintf(mess,"X %d %d", gId, position);
-						printf("mess vers server=%s\n", mess);
-						sendMessageToServer(gServerIpAddress, gServerPort, mess);
+						position=findPOI(mx,my);
+						printf("position=%d\n",position);
+						if (position != -1)
+						{
+							sprintf(mess,"X %d %d", gId, position);
+							printf("mess vers server=%s\n", mess);
+							sendMessageToServer(gServerIpAddress, gServerPort, mess);
+						}
 					}
 				}
 				break;
@@ -605,6 +609,8 @@ int main(int argc, char ** argv)
 				case 'I':
 					sscanf(gbuffer,"%c %d",&com, &gId);
 					printf("COM=%c id=%d\n",com,gId);
+					sprintf(gbuffer, "%d %s", gId, gName);
+					SDL_SetWindowTitle(window, gbuffer);
 					break;
 				case 'T':
 					sscanf(gbuffer,"%c %s",&com, mess);
@@ -617,6 +623,10 @@ int main(int argc, char ** argv)
 				case 'O':  // a qui le tour
 					sscanf(gbuffer,"%c %d", &com, &tour);
 					printf("COM=%c tour=%d\n", com, tour);
+					if (tour == gId)
+						monTour = 1;
+					else 
+						monTour = 0; 
 					break;
 				default:
 					break;
@@ -701,22 +711,22 @@ int main(int argc, char ** argv)
 
 		if (position != -1)  // place le joueur au clic de souris
 		{
-			if ((gId == 0) && (tour == 0))
+			if (gId == 0)
 			{
 				SDL_Rect dstrect_jack = { poi[position].x-16, poi[position].y-16, 32, 32 };
     	    	SDL_RenderCopy(renderer, texture_jack, NULL, &dstrect_jack);		
 			}
-			else if ((gId == 1) && (tour == 1))
+			else if (gId == 1)
 			{
 				SDL_Rect dstrect_policeR = { poi[position].x-85, poi[position].y-25, 160, 42 };
     	    	SDL_RenderCopy(renderer, texture_policeR, NULL, &dstrect_policeR);
 			}
-			else if ((gId == 2) && (tour == 2))
+			else if (gId == 2)
 			{
 				SDL_Rect dstrect_policeJ = { poi[position].x-85, poi[position].y-25, 160, 42 };
     	    	SDL_RenderCopy(renderer, texture_policeJ, NULL, &dstrect_policeJ);
 			}
-			else if ((gId == 3) && (tour == 3))
+			else if (gId == 3)
 			{
 				SDL_Rect dstrect_policeV = { poi[position].x-85, poi[position].y-25, 160, 42 };
     	    	SDL_RenderCopy(renderer, texture_policeV, NULL, &dstrect_policeV);
