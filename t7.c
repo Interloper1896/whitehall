@@ -26,6 +26,8 @@ int indice; // mouvement souris
 int position, posCollegue, posPoliceR, posPoliceJ, posPoliceV, posPotIndice, posIndice; // clic souris
 int tour = 10; // personne ne peut jouer avant que le serveur le décide
 int monTour = 0; // 1 si c'est mon tour
+int jackEstPasse[533];
+int nbIndices = 0;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -527,6 +529,7 @@ int main(int argc, char ** argv)
  
     SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
     SDL_Surface * image = IMG_Load("whitehall_800x800.png");
+	SDL_Surface * connect_button = IMG_Load("connect_button.png");
     SDL_Surface * pawn = IMG_Load("pawn.png");
     SDL_SetColorKey( pawn, SDL_TRUE, SDL_MapRGB( pawn->format, 0, 0, 0 ) );
     SDL_Surface * rond = IMG_Load("rond.png");
@@ -536,6 +539,7 @@ int main(int argc, char ** argv)
 	SDL_Surface * policeV = IMG_Load("vert.png");
     SDL_SetColorKey( rond, SDL_TRUE, SDL_MapRGB( rond->format, 0, 0, 0 ) );
     SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, image);
+	SDL_Texture * texture_button = SDL_CreateTextureFromSurface(renderer, connect_button);
     SDL_Texture * texture_pawn = SDL_CreateTextureFromSurface(renderer, pawn);
     SDL_Texture * texture_rond = SDL_CreateTextureFromSurface(renderer, rond);
 	SDL_Texture * texture_jack = SDL_CreateTextureFromSurface(renderer, jack);
@@ -567,13 +571,13 @@ int main(int argc, char ** argv)
 			case  SDL_MOUSEBUTTONDOWN:
 				SDL_GetMouseState( &mx, &my );
 				printf("mx=%d my=%d\n",mx,my);
-				if (mx>=800)
+				if ((mx>=800) && (my<=31))
 				{
 					sprintf(mess,"C %s %d %s", gClientIpAddress, gClientPort, gName);
 					printf("mess vers server=%s\n",mess);
 					sendMessageToServer(gServerIpAddress, gServerPort, mess);
 				}
-				else
+				else if (mx < 800)
 				{
 					if (monTour)
 					{
@@ -644,7 +648,9 @@ int main(int argc, char ** argv)
 					break;
 				case 'R':   // reponse si l'indice est juste
 					sscanf(gbuffer,"%c %d", &com, &posIndice);
-					printf("COM=%c mess=%s\n",com,posIndice);
+					printf("COM=%c posIndice=%d\n",com,posIndice);
+					if (nbIndices < 532) nbIndices++;
+					jackEstPasse[nbIndices] = posIndice;
 					break;
 				default:
 					break;
@@ -654,6 +660,7 @@ int main(int argc, char ** argv)
 		}
 
     	SDL_Rect dstrect = { 0, 0, 800, 800 };
+		SDL_Rect dstrect_button = { 800, 0, 128, 31 };
     	SDL_Rect dstrect_pawn = { 100, 100, 87, 131 };
     	SDL_Rect dstrect_rond = { 300, 300, 200, 200 };
 		SDL_Rect dstrect_jack = { 300, 300, 200, 200 };
@@ -661,6 +668,7 @@ int main(int argc, char ** argv)
 		SDL_Rect dstrect_policeJ = { 300, 300, 200, 200 };
 		SDL_Rect dstrect_policeV = { 300, 300, 200, 200 };
     	SDL_RenderCopy(renderer, texture, NULL, &dstrect);
+		SDL_RenderCopy(renderer, texture_button, NULL, &dstrect_button);
 
 
 		if (gId != 0)   // place les collegues policier si le joueur n'et pas Jack
@@ -695,7 +703,6 @@ int main(int argc, char ** argv)
 			}
 		}
 
-
 		if (indice != -1)   // propose les positions au passage de la souris
 		{
 			if (gId == 0)
@@ -718,13 +725,6 @@ int main(int argc, char ** argv)
 				SDL_Rect dstrect_policeV = { poi[indice].x-85, poi[indice].y-25, 160, 42 };
     	    	SDL_RenderCopy(renderer, texture_policeV, NULL, &dstrect_policeV);
 			}
-			/*
-			else
-			{
-				SDL_Rect dstrect_rond = { poi[indice].x-16, poi[indice].y-16, 32, 32 };
-    	    	SDL_RenderCopy(renderer, texture_rond, NULL, &dstrect_rond);
-			}
-			*/
 		}
 
 		if (position != -1)  // place le joueur au clic de souris
@@ -749,19 +749,22 @@ int main(int argc, char ** argv)
 				SDL_Rect dstrect_policeV = { poi[position].x-85, poi[position].y-25, 160, 42 };
     	    	SDL_RenderCopy(renderer, texture_policeV, NULL, &dstrect_policeV);
 			}
-			/*
-			else
+		}
+
+		if (gId != 0)
+		{
+			for (int i = 1; i <= nbIndices; i++)   // affiche les indices
 			{
-				SDL_Rect dstrect_rond = { poi[position].x-16, poi[position].y-16, 32, 32 };
-    	    	SDL_RenderCopy(renderer, texture_rond, NULL, &dstrect_rond);
+				SDL_Rect dstrect_rond = { poi[jackEstPasse[i]].x-16, poi[jackEstPasse[i]].y-16, 32, 32 };
+    		    SDL_RenderCopy(renderer, texture_rond, NULL, &dstrect_rond);
 			}
-			*/
 		}
 
     	SDL_RenderPresent(renderer);
     }
 
     SDL_DestroyTexture(texture);
+	SDL_DestroyTexture(texture_button);
 	SDL_DestroyTexture(texture_pawn);
 	SDL_DestroyTexture(texture_rond);
 	SDL_DestroyTexture(texture_jack);
@@ -769,6 +772,7 @@ int main(int argc, char ** argv)
 	SDL_DestroyTexture(texture_policeJ);
 	SDL_DestroyTexture(texture_policeV);
     SDL_FreeSurface(image);
+	SDL_FreeSurface(connect_button);
 	SDL_FreeSurface(pawn);
 	SDL_FreeSurface(rond);
 	SDL_FreeSurface(jack);

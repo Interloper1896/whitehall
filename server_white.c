@@ -186,16 +186,21 @@ int main(int argc, char *argv[])
 			{
 				if (id == tour)
 				{
+					printf("prise en compte du tour\n");
 					if (id != 0)  // si un policier se déplace, les autres policiers sont avertis de ce déplacement
 					{
 						sprintf(buffer, "P %d %d", position, id);
 						broadcastMessage(buffer);	
+						printf("envoi de la position aux autres policiers\n");
 					}
 					else
 					{
 						jackEstPasse[position] = 1;
+						printf("position Jack ajoutée\n");
 					}
 					tour++;
+					if (tour == 4) tour = 0;
+					printf("passage au tour suivant\n");
 					sprintf(reply,"O %d", tour);
 					broadcastMessage(reply);
 					sprintf(reply,"T Au_joueur_%s_de_jouer_!!", tcpClients[tour].name);
@@ -218,6 +223,7 @@ int main(int argc, char *argv[])
 							broadcastMessage(buffer);
 						}
 						tour++;
+						if (tour == 4) tour = 0;
 						sprintf(reply,"O %d", tour);
 						broadcastMessage(reply);
 						sprintf(reply,"T Au_joueur_%s_de_jouer_!!", tcpClients[tour].name);
@@ -229,9 +235,7 @@ int main(int argc, char *argv[])
 		default:
 			break;
 		}
-
-		if (tour >= 3) tour = 0;	
-	
+		
     	close(newsockfd);
     }
     close(sockfd);
