@@ -23,7 +23,7 @@ struct _poi
 	int y;
 } poi[533];
 int indice; // mouvement souris
-int position, posCollegue, posPoliceR, posPoliceJ, posPoliceV; // clic souris
+int position, posCollegue, posPoliceR, posPoliceJ, posPoliceV, posPotIndice, posIndice; // clic souris
 int tour = 10; // personne ne peut jouer avant que le serveur le décide
 int monTour = 0; // 1 si c'est mon tour
 
@@ -577,13 +577,27 @@ int main(int argc, char ** argv)
 				{
 					if (monTour)
 					{
-						position=findPOI(mx,my);
-						printf("position=%d\n",position);
-						if (position != -1)
+						if (event.button.button == SDL_BUTTON_LEFT)
 						{
-							sprintf(mess,"X %d %d", gId, position);
-							printf("mess vers server=%s\n", mess);
-							sendMessageToServer(gServerIpAddress, gServerPort, mess);
+							position=findPOI(mx,my);
+							printf("position=%d\n",position);
+							if (position != -1)
+							{
+								sprintf(mess,"X %d %d", gId, position);
+								printf("mess vers server=%s\n", mess);
+								sendMessageToServer(gServerIpAddress, gServerPort, mess);
+							}
+						}
+						else if (event.button.button == SDL_BUTTON_RIGHT)  // demande à une case si Jack est passé par là
+						{
+							posPotIndice=findPOI(mx,my);
+							printf("Position potentielle d'un indice : %d\n", posPotIndice);
+							if (posPotIndice != -1)
+							{
+								sprintf(mess,"A %d %d", gId, posPotIndice);
+								printf("mess vers server=%s\n", mess);
+								sendMessageToServer(gServerIpAddress, gServerPort, mess);
+							}
 						}
 					}
 				}
@@ -627,6 +641,10 @@ int main(int argc, char ** argv)
 						monTour = 1;
 					else 
 						monTour = 0; 
+					break;
+				case 'R':   // reponse si l'indice est juste
+					sscanf(gbuffer,"%c %d", &com, &posIndice);
+					printf("COM=%c mess=%s\n",com,posIndice);
 					break;
 				default:
 					break;

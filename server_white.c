@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
 	int id;
 	int position;
 	int tour = 0;
+	int jackEstPasse[533] = { 0 };
 
     struct sockaddr_in serv_addr, cli_addr;
     int n;
@@ -190,11 +191,38 @@ int main(int argc, char *argv[])
 						sprintf(buffer, "P %d %d", position, id);
 						broadcastMessage(buffer);	
 					}
+					else
+					{
+						jackEstPasse[position] = 1;
+					}
 					tour++;
 					sprintf(reply,"O %d", tour);
 					broadcastMessage(reply);
 					sprintf(reply,"T Au_joueur_%s_de_jouer_!!", tcpClients[tour].name);
 					broadcastMessage(reply);
+				}
+			}
+			break;
+		case 'A':     // vérifie si Jack est passé par là
+			sscanf(buffer,"%c %d %d", &com, &id, &position);
+			printf("COM=%c id=%d position potentielle indice=%d\n", com, id, position);
+			if (fsmServer == 1)
+			{
+				if (id == tour)
+				{
+					if (id != 0)  // seulement les policiers ont besoin de savoir
+					{
+						if (jackEstPasse[position] == 1)
+						{
+							sprintf(buffer, "R %d", position);  // envoie la confirmation de la postion de l'indice
+							broadcastMessage(buffer);
+						}
+						tour++;
+						sprintf(reply,"O %d", tour);
+						broadcastMessage(reply);
+						sprintf(reply,"T Au_joueur_%s_de_jouer_!!", tcpClients[tour].name);
+						broadcastMessage(reply);	
+					}
 				}
 			}
 			break;
