@@ -100,6 +100,8 @@ int main(int argc, char *argv[])
 	int position;
 	int tour = 0;
 	int jackEstPasse[533] = { 0 };
+	int zoneDeDecouverte[533] = { 0 };
+	int indiceOuZone; // necessaire lors de la demande par click gauche
 
     struct sockaddr_in serv_addr, cli_addr;
     int n;
@@ -130,6 +132,8 @@ int main(int argc, char *argv[])
     listen(sockfd,5);
     clilen = sizeof(cli_addr);
 
+	int flag1 = 0, flag2 = 0, flag3 = 0, flag4 = 0;   // flags de l'initialisation
+
     while (1)
     {    
     	newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
@@ -148,7 +152,7 @@ int main(int argc, char *argv[])
 
 		switch (buffer[0])
 		{
-		case 'C':
+		case 'C':   // phase de connection. Si réussite, passage à la phase d'initialisation
 			sscanf(buffer,"%c %s %d %s", &com, clientIpAddress, &clientPort, clientName);
 			printf("COM=%c ipAddress=%s port=%d name=%s\n", com, clientIpAddress, clientPort, clientName);
 			
@@ -171,18 +175,24 @@ int main(int argc, char *argv[])
 				if (nbClients==4)
 				{
 					fsmServer=1;
-					broadcastMessage("T Tout_le_monde_est_connecte,_le_jeu_peut_commencer_!");
+					broadcastMessage("T Tout_le_monde_est_connecte_!");
+					printf("Phase d'initialisation\n");
+
+					sprintf(reply,"J %d", fsmServer);
+					broadcastMessage(reply);
+					/*
 					sprintf(reply,"O %d", tour);
 					broadcastMessage(reply);
 					sprintf(reply,"T Au_joueur_%s_de_jouer_!!", tcpClients[tour].name);
 					broadcastMessage(reply);
+					*/
 				}
 			}
 			break;
-		case 'X':
+		case 'X':     // changement de position d'un joueur
 			sscanf(buffer,"%c %d %d", &com, &id, &position);
 			printf("COM=%c id=%d position=%d\n", com, id, position);
-			if (fsmServer == 1)
+			if (fsmServer == 2)
 			{
 				if (id == tour)
 				{
@@ -211,15 +221,22 @@ int main(int argc, char *argv[])
 		case 'A':     // vérifie si Jack est passé par là
 			sscanf(buffer,"%c %d %d", &com, &id, &position);
 			printf("COM=%c id=%d position potentielle indice=%d\n", com, id, position);
-			if (fsmServer == 1)
+			if (fsmServer == 2)
 			{
 				if (id == tour)
 				{
 					if (id != 0)  // seulement les policiers ont besoin de savoir
 					{
-						if (jackEstPasse[position] == 1)
+						if (zoneDeDecouverte[position] == 1)
 						{
-							sprintf(buffer, "R %d", position);  // envoie la confirmation de la postion de l'indice
+							indiceOuZone = 1;
+							sprintf(buffer, "R %d %d", position, indiceOuZone);  // envoie la confirmation de la postion de la zone de decouverte
+							broadcastMessage(buffer);
+						}
+						else if (jackEstPasse[position] == 1)    // priorité à la zone de découverte
+						{
+							indiceOuZone = 0;
+							sprintf(buffer, "R %d %d", position, indiceOuZone);  // envoie la confirmation de la postion de l'indice
 							broadcastMessage(buffer);
 						}
 						tour++;
@@ -229,6 +246,66 @@ int main(int argc, char *argv[])
 						sprintf(reply,"T Au_joueur_%s_de_jouer_!!", tcpClients[tour].name);
 						broadcastMessage(reply);	
 					}
+				}
+			}
+			break;
+		case 'I':     // stade initialisation : Jack choisit quatre zones de decouvertes et se place, et les trois policiers se placent
+			sscanf(buffer,"%c %d %d", &com, &id, &position);
+			printf("COM=%c id=%d position=%d\n", com, id, position);
+			if (fsmServer == 1)
+			{
+				if (id == 0)   // Init Jack
+				{
+					if (flag1 <= 3)
+					{
+						zoneDeDecouverte[position] = 1;
+						broadcastMessage("T Zone_de_decouverte_ajoutee");
+						flag1++;
+					}
+					else if (flag1 == 4) 
+					{
+						jackEstPasse[position] = 1;
+						printf("position Jack ajoutée\n");
+						broadcastMessage("T Initialisation_Jack_terminee_!");
+						flag1++;
+					}
+				}
+				else if ((id == 1) && (flag2 == 0)) // Init policier 1
+				{
+					flag2++;
+					broadcastMessage("T Initialisation_policier1_!");
+					sprintf(buffer, "P %d %d", position, id);
+					broadcastMessage(buffer);	
+					printf("envoi de la position aux autres policiers\n");
+				}
+				else if ((id == 2) && (flag3 == 0))  // Init policier 2
+				{
+					flag3++;
+					broadcastMessage("T Initialisation_policier2_terminee_!");
+					sprintf(buffer, "P %d %d", position, id);
+					broadcastMessage(buffer);	
+					printf("envoi de la position aux autres policiers\n");
+				}
+				else if ((id == 3) && (flag4 == 0))  // Init policier 3
+				{
+					flag4++;
+					broadcastMessage("T Initialisation_policier3_terminee_!");
+					sprintf(buffer, "P %d %d", position, id);
+					broadcastMessage(buffer);	
+					printf("envoi de la position aux autres policiers\n");
+				}
+				if ((flag1 == 5) && (flag2 == 1) && (flag3 == 1) && (flag4 == 1))
+				{
+					fsmServer = 2;
+					broadcastMessage("T Initialisation_terminee_!");
+					printf("Phase d'initialisation terminée\n");
+					sprintf(reply,"J %d", fsmServer);
+					broadcastMessage(reply);
+
+					sprintf(reply,"O %d", tour);
+					broadcastMessage(reply);
+					sprintf(reply,"T Au_joueur_%s_de_jouer_!!", tcpClients[tour].name);
+					broadcastMessage(reply);
 				}
 			}
 			break;

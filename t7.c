@@ -23,11 +23,18 @@ struct _poi
 	int y;
 } poi[533];
 int indice; // mouvement souris
-int position, posCollegue, posPoliceR, posPoliceJ, posPoliceV, posPotIndice, posIndice; // clic souris
+int position, posCollegue, posPoliceR, posPoliceJ, posPoliceV, posPotIndice, posIndice, posZonePolice, posIndiceOuZone, posZoneJack; // clic souris
 int tour = 10; // personne ne peut jouer avant que le serveur le décide
 int monTour = 0; // 1 si c'est mon tour
 int jackEstPasse[533];
+int zoneDecouvertePolice[5];
+int zoneDecouverteJack[5];
 int nbIndices = 0;
+int nbZonesDecouvertePolice = 0;
+int nbZonesDecouverteJack = 0;
+int indiceOuZone;
+int phaseInit = 0; // 0 : connection, 1 : initialisation, 2 : jeu
+int initJack = 0, initPol1 = 0, initPol2 = 0, initPol3 = 0;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -571,7 +578,7 @@ int main(int argc, char ** argv)
 			case  SDL_MOUSEBUTTONDOWN:
 				SDL_GetMouseState( &mx, &my );
 				printf("mx=%d my=%d\n",mx,my);
-				if ((mx>=800) && (my<=31))
+				if ((mx>=800) && (my<=31))    // si c'est le bouton connection
 				{
 					sprintf(mess,"C %s %d %s", gClientIpAddress, gClientPort, gName);
 					printf("mess vers server=%s\n",mess);
@@ -579,28 +586,102 @@ int main(int argc, char ** argv)
 				}
 				else if (mx < 800)
 				{
-					if (monTour)
+					if (phaseInit == 1)  // initialisation
 					{
 						if (event.button.button == SDL_BUTTON_LEFT)
 						{
-							position=findPOI(mx,my);
-							printf("position=%d\n",position);
-							if (position != -1)
+							if ((gId == 1) && (initPol1 == 0))
 							{
-								sprintf(mess,"X %d %d", gId, position);
-								printf("mess vers server=%s\n", mess);
-								sendMessageToServer(gServerIpAddress, gServerPort, mess);
+								position=findPOI(mx,my);
+								printf("position=%d\n",position);
+								if (position != -1)   //////  !!!!!!!!!!!! Ici donner les carrés jaunes valides
+								{
+									sprintf(mess,"I %d %d", gId, position);
+									printf("mess vers server=%s\n", mess);
+									sendMessageToServer(gServerIpAddress, gServerPort, mess);
+								}
+								initPol1++;
+							}
+							else if ((gId == 2) && (initPol2 == 0))
+							{
+								position=findPOI(mx,my);
+								printf("position=%d\n",position);
+								if (position != -1)   //////  !!!!!!!!!!!! Ici donner les carrés jaunes valides
+								{
+									sprintf(mess,"I %d %d", gId, position);
+									printf("mess vers server=%s\n", mess);
+									sendMessageToServer(gServerIpAddress, gServerPort, mess);
+								}
+								initPol2++;
+							}
+							else if ((gId == 3) && (initPol3 == 0))
+							{
+								position=findPOI(mx,my);
+								printf("position=%d\n",position);
+								if (position != -1)   //////  !!!!!!!!!!!! Ici donner les carrés jaunes valides
+								{
+									sprintf(mess,"I %d %d", gId, position);
+									printf("mess vers server=%s\n", mess);
+									sendMessageToServer(gServerIpAddress, gServerPort, mess);
+								}
+								initPol3++;
+							}
+							else if ((gId == 0) && (initJack <= 4))
+							{
+								if (initJack <= 3)
+								{
+									posZoneJack=findPOI(mx,my);
+									printf("positionZoneJack=%d\n",posZoneJack);
+									if (posZoneJack != -1)
+									{
+										nbZonesDecouverteJack++;
+										zoneDecouverteJack[nbZonesDecouverteJack] = posZoneJack;
+										sprintf(mess,"I %d %d", gId, posZoneJack);
+										printf("mess vers server=%s\n", mess);
+										sendMessageToServer(gServerIpAddress, gServerPort, mess);
+									}
+									initJack++;
+								}
+								else if (initJack == 4)
+								{
+									position=findPOI(mx,my);
+									printf("position=%d\n",position);
+									if (position != -1)
+									{
+										sprintf(mess,"I %d %d", gId, position);
+										printf("mess vers server=%s\n", mess);
+										sendMessageToServer(gServerIpAddress, gServerPort, mess);
+									}
+									initJack++;
+								}
 							}
 						}
-						else if (event.button.button == SDL_BUTTON_RIGHT)  // demande à une case si Jack est passé par là
+					}
+					else if (phaseInit == 2)  // jeu
+					{
+						if (monTour)
 						{
-							posPotIndice=findPOI(mx,my);
-							printf("Position potentielle d'un indice : %d\n", posPotIndice);
-							if (posPotIndice != -1)
+							if (event.button.button == SDL_BUTTON_LEFT)
 							{
-								sprintf(mess,"A %d %d", gId, posPotIndice);
-								printf("mess vers server=%s\n", mess);
-								sendMessageToServer(gServerIpAddress, gServerPort, mess);
+								position=findPOI(mx,my);
+								printf("position=%d\n",position);
+								if (position != -1)
+								{
+									sprintf(mess,"X %d %d", gId, position);
+									printf("mess vers server=%s\n", mess);
+									sendMessageToServer(gServerIpAddress, gServerPort, mess);
+								}
+							}
+							else if (event.button.button == SDL_BUTTON_RIGHT)  // demande à une case si Jack est passé par là
+							{
+								posPotIndice=findPOI(mx,my);
+								printf("Position potentielle d'un indice : %d\n", posPotIndice);
+								if (posPotIndice != -1)
+								{
+									sprintf(mess,"A %d %d", gId, posPotIndice);
+									printf("mess vers server=%s\n", mess);
+									sendMessageToServer(gServerIpAddress, gServerPort, mess);
+								}
 							}
 						}
 					}
@@ -630,7 +711,7 @@ int main(int argc, char ** argv)
 					sprintf(gbuffer, "%d %s", gId, gName);
 					SDL_SetWindowTitle(window, gbuffer);
 					break;
-				case 'T':
+				case 'T':  // envoie d'un message d'information
 					sscanf(gbuffer,"%c %s",&com, mess);
 					printf("COM=%c mess=%s\n",com,mess);
 					break;
@@ -647,10 +728,24 @@ int main(int argc, char ** argv)
 						monTour = 0; 
 					break;
 				case 'R':   // reponse si l'indice est juste
-					sscanf(gbuffer,"%c %d", &com, &posIndice);
-					printf("COM=%c posIndice=%d\n",com,posIndice);
-					if (nbIndices < 532) nbIndices++;
-					jackEstPasse[nbIndices] = posIndice;
+					sscanf(gbuffer,"%c %d %d", &com, &posIndiceOuZone, &indiceOuZone);
+					printf("COM=%c posIndiceOuZone=%d indiceOuZone=%d\n",com,posIndiceOuZone,indiceOuZone);
+					if (indiceOuZone == 0)
+					{
+						posIndice = posIndiceOuZone;      // la case demandée est un indice
+						if (nbIndices < 532) nbIndices++;
+						jackEstPasse[nbIndices] = posIndice;
+					}
+					else if (indiceOuZone == 1)
+					{
+						posZonePolice = posIndiceOuZone;    // la case demandée est une zone
+						if (nbZonesDecouvertePolice < 4) nbZonesDecouvertePolice++;
+						zoneDecouvertePolice[nbZonesDecouvertePolice] = posZonePolice;
+					}
+					break;
+				case 'J':   // indication du statut des phases
+					sscanf(gbuffer,"%c %d", &com, &phaseInit);
+					printf("phase = %d\n", phaseInit);
 					break;
 				default:
 					break;
@@ -751,11 +846,26 @@ int main(int argc, char ** argv)
 			}
 		}
 
+
+		// Affichage des ronds
 		if (gId != 0)
 		{
 			for (int i = 1; i <= nbIndices; i++)   // affiche les indices
 			{
 				SDL_Rect dstrect_rond = { poi[jackEstPasse[i]].x-16, poi[jackEstPasse[i]].y-16, 32, 32 };
+    		    SDL_RenderCopy(renderer, texture_rond, NULL, &dstrect_rond);
+			}
+			for (int i = 1; i <= nbZonesDecouvertePolice; i++)   // affiche les zones decouvertes par les policiers
+			{
+				SDL_Rect dstrect_rond = { poi[zoneDecouvertePolice[i]].x-16, poi[zoneDecouvertePolice[i]].y-16, 32, 32 };
+    		    SDL_RenderCopy(renderer, texture_rond, NULL, &dstrect_rond);
+			}
+		}
+		else if (gId == 0)
+		{
+			for (int i = 1; i <= nbZonesDecouverteJack; i++)   // affiche les zones de decouvertes choisies par Jack
+			{
+				SDL_Rect dstrect_rond = { poi[zoneDecouverteJack[i]].x-16, poi[zoneDecouverteJack[i]].y-16, 32, 32 };
     		    SDL_RenderCopy(renderer, texture_rond, NULL, &dstrect_rond);
 			}
 		}
