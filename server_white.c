@@ -97,11 +97,14 @@ int main(int argc, char *argv[])
 	char clientIpAddress[256], clientName[256];
 	int clientPort;
 	int id;
-	int position;
+	int position, posJack;
 	int tour = 0;
 	int jackEstPasse[533] = { 0 };
 	int zoneDeDecouverte[533] = { 0 };
 	int indiceOuZone; // necessaire lors de la demande par click gauche
+	int nbZonesDecouvertesPolice = 0;
+	int nbZonesDecouvertesJack = 0;
+	int compteursTotJack = 0;
 
     struct sockaddr_in serv_addr, cli_addr;
     int n;
@@ -180,12 +183,6 @@ int main(int argc, char *argv[])
 
 					sprintf(reply,"J %d", fsmServer);
 					broadcastMessage(reply);
-					/*
-					sprintf(reply,"O %d", tour);
-					broadcastMessage(reply);
-					sprintf(reply,"T Au_joueur_%s_de_jouer_!!", tcpClients[tour].name);
-					broadcastMessage(reply);
-					*/
 				}
 			}
 			break;
@@ -205,8 +202,35 @@ int main(int argc, char *argv[])
 					}
 					else
 					{
+						compteursTotJack++;
+						sprintf(reply,"T Tours_de_Jack=%d/16", compteursTotJack);
+						broadcastMessage(reply);
 						jackEstPasse[position] = 1;
+						posJack = position;
 						printf("position Jack ajoutée\n");
+						// si Jack atteind une zone de découverte
+						if (zoneDeDecouverte[position] == 1)
+						{
+							compteursTotJack = 0;
+							nbZonesDecouvertesJack++;
+							sprintf(reply,"T Jack_a_atteind_une_zone_de_decouverte_!!");
+							broadcastMessage(reply);
+							sprintf(buffer, "Z %d", position);
+							broadcastMessage(buffer);	
+							printf("envoi de la zone de decouverte aux policiers\n");
+							zoneDeDecouverte[position] = 0;
+							// Si Jack a atteind toutes ses zones de decouverte
+							if (nbZonesDecouvertesJack == 4)
+							{
+								sprintf(reply,"T JEU_TERMINE_JACK_A_GAGNE_!!");
+								broadcastMessage(reply);
+							}
+						}
+						else if (compteursTotJack == 16)
+						{
+							sprintf(reply,"T JEU_TERMINE_LES_POLICIERS_ONT_GAGNE_!!_Jack_a_mis_trop_de_temps_à_atteindre_la_zone");
+							broadcastMessage(reply);
+						}
 					}
 					tour++;
 					if (tour == 4) tour = 0;
@@ -218,7 +242,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			break;
-		case 'A':     // vérifie si Jack est passé par là
+		case 'A':     // vérifie si Jack est passé par là, si il est là, ou si c'est une zone de decouverte
 			sscanf(buffer,"%c %d %d", &com, &id, &position);
 			printf("COM=%c id=%d position potentielle indice=%d\n", com, id, position);
 			if (fsmServer == 2)
@@ -227,11 +251,23 @@ int main(int argc, char *argv[])
 				{
 					if (id != 0)  // seulement les policiers ont besoin de savoir
 					{
-						if (zoneDeDecouverte[position] == 1)
+						if (posJack == position)
 						{
+							sprintf(reply,"T JEU_TERMINE_LES_POLICIERS_ONT_GAGNE_!!");
+							broadcastMessage(reply);	
+						}
+						else if (zoneDeDecouverte[position] == 1)
+						{
+							zoneDeDecouverte[position] = 0;
 							indiceOuZone = 1;
+							nbZonesDecouvertesPolice++;
 							sprintf(buffer, "R %d %d", position, indiceOuZone);  // envoie la confirmation de la postion de la zone de decouverte
 							broadcastMessage(buffer);
+							if (nbZonesDecouvertesPolice == 4)   // toutes les zones de decouvertes ont ete trouvees
+							{
+								sprintf(reply,"T JEU_TERMINE_LES_POLICIERS_ONT_GAGNE_!!");
+								broadcastMessage(reply);
+							}
 						}
 						else if (jackEstPasse[position] == 1)    // priorité à la zone de découverte
 						{
