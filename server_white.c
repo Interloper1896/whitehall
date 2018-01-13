@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 				if (nbClients==4)
 				{
 					fsmServer=1;
-					broadcastMessage("T Tout_le_monde_est_connecte_!");
+					broadcastMessage("T Tout_le_monde_est_connecte_phase_initialisation_!");
 					printf("Phase d'initialisation\n");
 
 					sprintf(reply,"J %d", fsmServer);
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 					else
 					{
 						compteursTotJack++;
-						sprintf(reply,"T Tours_de_Jack=%d/16", compteursTotJack);
+						sprintf(reply,"T Tours_de_Jack=%d/15", compteursTotJack);
 						broadcastMessage(reply);
 						jackEstPasse[position] = 1;
 						posJack = position;
@@ -224,12 +224,14 @@ int main(int argc, char *argv[])
 							{
 								sprintf(reply,"T JEU_TERMINE_JACK_A_GAGNE_!!");
 								broadcastMessage(reply);
+								fsmServer = 3;
 							}
 						}
-						else if (compteursTotJack == 16)
+						else if (compteursTotJack == 15)
 						{
 							sprintf(reply,"T JEU_TERMINE_LES_POLICIERS_ONT_GAGNE_!!_Jack_a_mis_trop_de_temps_à_atteindre_la_zone");
 							broadcastMessage(reply);
+							fsmServer = 3;
 						}
 					}
 					tour++;
@@ -254,7 +256,8 @@ int main(int argc, char *argv[])
 						if (posJack == position)
 						{
 							sprintf(reply,"T JEU_TERMINE_LES_POLICIERS_ONT_GAGNE_!!");
-							broadcastMessage(reply);	
+							broadcastMessage(reply);
+							fsmServer = 3;	
 						}
 						else if (zoneDeDecouverte[position] == 1)
 						{
@@ -267,6 +270,7 @@ int main(int argc, char *argv[])
 							{
 								sprintf(reply,"T JEU_TERMINE_LES_POLICIERS_ONT_GAGNE_!!");
 								broadcastMessage(reply);
+								fsmServer = 3;
 							}
 						}
 						else if (jackEstPasse[position] == 1)    // priorité à la zone de découverte

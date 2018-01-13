@@ -23,7 +23,7 @@ struct _poi
 	int y;
 } poi[533];
 int indice; // mouvement souris
-int position, posCollegue, posPoliceR, posPoliceJ, posPoliceV, posPotIndice, posIndice, posZonePolice, posIndiceOuZone, posZoneJack, posZoneDecouverte, posInitPolice; // clic souris
+int position, posCollegue, posPoliceR, posPoliceJ, posPoliceB, posPotIndice, posIndice, posZonePolice, posIndiceOuZone, posZoneJack, posZoneDecouverte, posInitPolice; // clic souris
 int tour = 10; // personne ne peut jouer avant que le serveur le décide
 int monTour = 0; // 1 si c'est mon tour
 int jackEstPasse[533];
@@ -540,13 +540,13 @@ int main(int argc, char ** argv)
     SDL_Surface * pawn = IMG_Load("pawn.png");
     SDL_SetColorKey( pawn, SDL_TRUE, SDL_MapRGB( pawn->format, 0, 0, 0 ) );
     SDL_Surface * rond_rouge = IMG_Load("rond_rouge.png");
-	//SDL_Surface * rond_jaune = IMG_Load("rond_jaune.png");
-	SDL_Surface * rond_jaune = IMG_Load("rond_rouge.png");
+	SDL_Surface * rond_jaune = IMG_Load("rond_jaune.png");
+	//SDL_Surface * rond_jaune = IMG_Load("rond_rouge.png");
 	SDL_Surface * jack = IMG_Load("jack.png");
 	SDL_Surface * policeR = IMG_Load("rouge.png");
 	SDL_Surface * policeJ = IMG_Load("jaune.png");
-	SDL_Surface * policeV = IMG_Load("vert.png");
-    SDL_SetColorKey( rond_jaune, SDL_TRUE, SDL_MapRGB( rond_jaune->format, 255, 255, 0 ) );
+	SDL_Surface * policeB = IMG_Load("bleu.png");
+    //SDL_SetColorKey( rond_jaune, SDL_TRUE, SDL_MapRGB( rond_jaune->format, 255, 255, 0 ) );
     SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, image);
 	SDL_Texture * texture_button = SDL_CreateTextureFromSurface(renderer, connect_button);
     SDL_Texture * texture_pawn = SDL_CreateTextureFromSurface(renderer, pawn);
@@ -555,13 +555,13 @@ int main(int argc, char ** argv)
 	SDL_Texture * texture_jack = SDL_CreateTextureFromSurface(renderer, jack);
 	SDL_Texture * texture_policeR = SDL_CreateTextureFromSurface(renderer, policeR);
 	SDL_Texture * texture_policeJ = SDL_CreateTextureFromSurface(renderer, policeJ);
-	SDL_Texture * texture_policeV = SDL_CreateTextureFromSurface(renderer, policeV);
+	SDL_Texture * texture_policeB = SDL_CreateTextureFromSurface(renderer, policeB);
 	SDL_SetTextureAlphaMod(texture_rond_rouge,128);
 	SDL_SetTextureAlphaMod(texture_rond_jaune,128);
 	SDL_SetTextureAlphaMod(texture_jack,128);
 	SDL_SetTextureAlphaMod(texture_policeR,140);
 	SDL_SetTextureAlphaMod(texture_policeJ,128);
-	SDL_SetTextureAlphaMod(texture_policeV,128);
+	SDL_SetTextureAlphaMod(texture_policeB,128);
  
 	initPOI();
 
@@ -646,8 +646,8 @@ int main(int argc, char ** argv)
 										sprintf(mess,"I %d %d", gId, posZoneJack);
 										printf("mess vers server=%s\n", mess);
 										sendMessageToServer(gServerIpAddress, gServerPort, mess);
+										initJack++;
 									}
-									initJack++;
 								}
 								else if (initJack == 4)
 								{
@@ -658,8 +658,8 @@ int main(int argc, char ** argv)
 										sprintf(mess,"I %d %d", gId, position);
 										printf("mess vers server=%s\n", mess);
 										sendMessageToServer(gServerIpAddress, gServerPort, mess);
+										initJack++;
 									}
-									initJack++;
 								}
 							}
 						}
@@ -759,6 +759,13 @@ int main(int argc, char ** argv)
 					printf("zone atteinte par Jack = %d\n", posZoneDecouverte);
 					nbZonesDecouvertePolice++;
 					zoneDecouvertePolice[nbZonesDecouvertePolice] = posZonePolice;
+					for (int i = 0; i <= nbZonesDecouverteJack; i++)
+					{
+						if (zoneDecouverteJack[i] == posZoneDecouverte)
+						{
+							zoneDecouverteJack[i] = -1;
+						}
+					}
 					break;
 				default:
 					break;
@@ -775,7 +782,7 @@ int main(int argc, char ** argv)
 		SDL_Rect dstrect_jack = { 300, 300, 200, 200 };
 		SDL_Rect dstrect_policeR = { 300, 300, 200, 200 };
 		SDL_Rect dstrect_policeJ = { 300, 300, 200, 200 };
-		SDL_Rect dstrect_policeV = { 300, 300, 200, 200 };
+		SDL_Rect dstrect_policeB = { 300, 300, 200, 200 };
     	SDL_RenderCopy(renderer, texture, NULL, &dstrect);
 		SDL_RenderCopy(renderer, texture_button, NULL, &dstrect_button);
 
@@ -787,21 +794,21 @@ int main(int argc, char ** argv)
 			else if ((idCollegue == 2) && (idCollegue != gId))
 				posPoliceJ = posCollegue;
 			else if ((idCollegue == 3) && (idCollegue != gId))
-				posPoliceV = posCollegue;
+				posPoliceB = posCollegue;
 
 			if (gId == 1)
 			{
 				SDL_Rect dstrect_policeJ = { poi[posPoliceJ].x-85, poi[posPoliceJ].y-25, 160, 42 };
     	    	SDL_RenderCopy(renderer, texture_policeJ, NULL, &dstrect_policeJ);
-				SDL_Rect dstrect_policeV = { poi[posPoliceV].x-85, poi[posPoliceV].y-25, 160, 42 };
-    	    	SDL_RenderCopy(renderer, texture_policeV, NULL, &dstrect_policeV);
+				SDL_Rect dstrect_policeB = { poi[posPoliceB].x-85, poi[posPoliceB].y-25, 160, 42 };
+    	    	SDL_RenderCopy(renderer, texture_policeB, NULL, &dstrect_policeB);
 			}
 			else if (gId == 2)
 			{
 				SDL_Rect dstrect_policeR = { poi[posPoliceR].x-85, poi[posPoliceR].y-25, 160, 42 };
     	    	SDL_RenderCopy(renderer, texture_policeR, NULL, &dstrect_policeR);
-				SDL_Rect dstrect_policeV = { poi[posPoliceV].x-85, poi[posPoliceV].y-25, 160, 42 };
-    	    	SDL_RenderCopy(renderer, texture_policeV, NULL, &dstrect_policeV);
+				SDL_Rect dstrect_policeB = { poi[posPoliceB].x-85, poi[posPoliceB].y-25, 160, 42 };
+    	    	SDL_RenderCopy(renderer, texture_policeB, NULL, &dstrect_policeB);
 			}
 			else if (gId == 3)
 			{
@@ -831,8 +838,8 @@ int main(int argc, char ** argv)
 			}
 			else if (gId == 3)
 			{
-				SDL_Rect dstrect_policeV = { poi[indice].x-85, poi[indice].y-25, 160, 42 };
-    	    	SDL_RenderCopy(renderer, texture_policeV, NULL, &dstrect_policeV);
+				SDL_Rect dstrect_policeB = { poi[indice].x-85, poi[indice].y-25, 160, 42 };
+    	    	SDL_RenderCopy(renderer, texture_policeB, NULL, &dstrect_policeB);
 			}
 		}
 
@@ -855,8 +862,8 @@ int main(int argc, char ** argv)
 			}
 			else if (gId == 3)
 			{
-				SDL_Rect dstrect_policeV = { poi[position].x-85, poi[position].y-25, 160, 42 };
-    	    	SDL_RenderCopy(renderer, texture_policeV, NULL, &dstrect_policeV);
+				SDL_Rect dstrect_policeB = { poi[position].x-85, poi[position].y-25, 160, 42 };
+    	    	SDL_RenderCopy(renderer, texture_policeB, NULL, &dstrect_policeB);
 			}
 		}
 
@@ -879,8 +886,11 @@ int main(int argc, char ** argv)
 		{
 			for (int i = 1; i <= nbZonesDecouverteJack; i++)   // affiche les zones de decouvertes choisies par Jack
 			{
-				SDL_Rect dstrect_rond_rouge = { poi[zoneDecouverteJack[i]].x-16, poi[zoneDecouverteJack[i]].y-16, 32, 32 };
-    		    SDL_RenderCopy(renderer, texture_rond_rouge, NULL, &dstrect_rond_rouge);
+				if (zoneDecouverteJack[i] != -1)   // si la zone n'a pas déjà été atteinte par Jack
+				{
+					SDL_Rect dstrect_rond_rouge = { poi[zoneDecouverteJack[i]].x-16, poi[zoneDecouverteJack[i]].y-16, 32, 32 };
+    		    	SDL_RenderCopy(renderer, texture_rond_rouge, NULL, &dstrect_rond_rouge);
+				}
 			}
 		}
 
@@ -895,7 +905,7 @@ int main(int argc, char ** argv)
 	SDL_DestroyTexture(texture_jack);
 	SDL_DestroyTexture(texture_policeR);
 	SDL_DestroyTexture(texture_policeJ);
-	SDL_DestroyTexture(texture_policeV);
+	SDL_DestroyTexture(texture_policeB);
     SDL_FreeSurface(image);
 	SDL_FreeSurface(connect_button);
 	SDL_FreeSurface(pawn);
@@ -904,7 +914,7 @@ int main(int argc, char ** argv)
 	SDL_FreeSurface(jack);
 	SDL_FreeSurface(policeR);
 	SDL_FreeSurface(policeJ);
-	SDL_FreeSurface(policeV);
+	SDL_FreeSurface(policeB);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
  
