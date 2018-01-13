@@ -512,6 +512,7 @@ int main(int argc, char ** argv)
     SDL_Event event;
     pthread_t thread1;
 	int mx,my;
+	int dejaPlace = 0;
 
 	char com;
 	int px,py;
@@ -639,7 +640,12 @@ int main(int argc, char ** argv)
 								{
 									posZoneJack=findPOI(mx,my);
 									printf("positionZoneJack=%d\n",posZoneJack);
-									if (posZoneJack != -1)
+									for (int i = 1; i <= nbZonesDecouverteJack; i++)
+									{
+										if (zoneDecouverteJack[i] == posZoneJack)
+											dejaPlace = 1;
+									}
+									if ((posZoneJack != -1) && (dejaPlace == 0))
 									{
 										nbZonesDecouverteJack++;
 										zoneDecouverteJack[nbZonesDecouverteJack] = posZoneJack;
@@ -648,11 +654,17 @@ int main(int argc, char ** argv)
 										sendMessageToServer(gServerIpAddress, gServerPort, mess);
 										initJack++;
 									}
+									dejaPlace = 0;
 								}
-								else if (initJack == 4)
+								else if ((initJack == 4) && (dejaPlace == 0))
 								{
 									position=findPOI(mx,my);
 									printf("position=%d\n",position);
+									for (int i = 1; i <= nbZonesDecouverteJack; i++)
+									{
+										if (zoneDecouverteJack[i] == posZoneJack)
+											dejaPlace = 1;
+									}
 									if (position != -1)
 									{
 										sprintf(mess,"I %d %d", gId, position);
@@ -660,6 +672,7 @@ int main(int argc, char ** argv)
 										sendMessageToServer(gServerIpAddress, gServerPort, mess);
 										initJack++;
 									}
+									dejaPlace = 0;
 								}
 							}
 						}
