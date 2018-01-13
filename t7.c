@@ -23,7 +23,7 @@ struct _poi
 	int y;
 } poi[533];
 int indice; // mouvement souris
-int position, posCollegue, posPoliceR, posPoliceJ, posPoliceB, posPotIndice, posIndice, posZonePolice, posIndiceOuZone, posZoneJack, posZoneDecouverte, posInitPolice; // clic souris
+int position, posCollegue, posPoliceR, posPoliceJ, posPoliceB, posPotIndice, posIndice, posZonePolice, posIndiceOuZone, posZoneJack, posZoneDecouverte, posInitPolice, posInitJack; // clic souris
 int tour = 10; // personne ne peut jouer avant que le serveur le décide
 int monTour = 0; // 1 si c'est mon tour
 int jackEstPasse[533];
@@ -656,23 +656,22 @@ int main(int argc, char ** argv)
 									}
 									dejaPlace = 0;
 								}
-								else if ((initJack == 4) && (dejaPlace == 0))
+								else if (initJack == 4)
 								{
-									position=findPOI(mx,my);
-									printf("position=%d\n",position);
+									posInitJack=findPOI(mx,my);
+									printf("posInitJack=%d\n",posInitJack);
 									for (int i = 1; i <= nbZonesDecouverteJack; i++)
 									{
-										if (zoneDecouverteJack[i] == posZoneJack)
-											dejaPlace = 1;
+										if (zoneDecouverteJack[i] == posInitJack)  // Jack doit se positionner d'abord sur une de ses zones de découvertes
+										{
+											position = posZoneJack;
+									
+											sprintf(mess,"I %d %d", gId, position);
+											printf("mess vers server=%s\n", mess);
+											sendMessageToServer(gServerIpAddress, gServerPort, mess);
+											initJack++;
+										}
 									}
-									if (position != -1)
-									{
-										sprintf(mess,"I %d %d", gId, position);
-										printf("mess vers server=%s\n", mess);
-										sendMessageToServer(gServerIpAddress, gServerPort, mess);
-										initJack++;
-									}
-									dejaPlace = 0;
 								}
 							}
 						}
@@ -771,7 +770,8 @@ int main(int argc, char ** argv)
 					sscanf(gbuffer,"%c %d", &com, &posZoneDecouverte);
 					printf("zone atteinte par Jack = %d\n", posZoneDecouverte);
 					nbZonesDecouvertePolice++;
-					zoneDecouvertePolice[nbZonesDecouvertePolice] = posZonePolice;
+					zoneDecouvertePolice[nbZonesDecouvertePolice] = posZoneDecouverte;
+					printf ("nbZonesDecouvertePolice=%d, posZonePolice=%d\n", nbZonesDecouvertePolice, posZoneDecouverte);
 					for (int i = 0; i <= nbZonesDecouverteJack; i++)
 					{
 						if (zoneDecouverteJack[i] == posZoneDecouverte)
