@@ -340,6 +340,8 @@ int main(int argc, char *argv[])
 						{
 							sprintf(reply,"T JEU_TERMINE_LES_POLICIERS_ONT_GAGNE_!!_Jack_a_ete_trouve.");
 							broadcastMessage(reply);
+							sprintf(buffer, "R %d %d", position, 1);  // envoie la position de Jack
+							broadcastMessage(buffer);
 							fsmServer = 3;	
 						}
 						else if (zoneDeDecouverte[position] == 1)
